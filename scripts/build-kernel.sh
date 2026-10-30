@@ -10,7 +10,7 @@ if [ "${INSTALL_DEPS:-0}" = "1" ]; then
     apt-get update -qq
     apt-get install -y -qq --no-install-recommends \
         build-essential bc bison flex cpio kmod rsync python3 perl \
-        libssl-dev libelf-dev dpkg-dev debhelper curl ca-certificates xz-utils \
+        libssl-dev libelf-dev libdw-dev dpkg-dev lsb-release debhelper curl ca-certificates xz-utils \
         clang lld llvm gcc-aarch64-linux-gnu libc6-dev-arm64-cross patch >/dev/null
 fi
 
@@ -42,6 +42,9 @@ cp "${TOPDIR}/kernel/config-sm8150.aarch64" .config
 ARCH=arm64 LLVM=1 ./scripts/kconfig/merge_config.sh -m .config "${TOPDIR}/kernel/mobian-vayu.config"
 "${MAKE[@]}" olddefconfig
 grep -q '^CONFIG_EFI_ZBOOT=y' .config && die "EFI_ZBOOT is still enabled"
+for sym in CONFIG_TOUCHSCREEN_NT36672_SPI=y CONFIG_DRM_PANEL_HUAXING_NT36672=m CONFIG_DRM_PANEL_TIANMA_NT36672=m; do
+    grep -q "^${sym}$" .config || die "Kernel config check failed: ${sym} not set (dependency missing?)"
+done
 
 if [ "${KERNEL_CONFIG_ONLY:-0}" = "1" ]; then
     fix_owner "${WORKDIR}"
@@ -53,6 +56,9 @@ PKGVER="${KREL}-${BUILD_NUMBER:-1}"
 log "Building linux-image-${KREL} (${PKGVER})"
 
 # Only the image package is needed (no headers / debug packages)
+export KDEB_CHANGELOG_DIST=unstable
+# -d: we cross-compile with clang; don't let dpkg-checkbuilddeps veto that
+export DPKG_FLAGS="-d"
 export DEB_BUILD_PROFILES="pkg.linux-upstream.nokernelheaders pkg.linux-upstream.nokerneldbg"
 "${MAKE[@]}" KBUILD_DEBARCH=arm64 KDEB_PKGVERSION="${PKGVER}" \
     KBUILD_BUILD_USER=mobian-vayu KBUILD_BUILD_HOST=builder bindeb-pkg
