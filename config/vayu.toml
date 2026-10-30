@@ -1,0 +1,29 @@
+# Mobian "qcom-wip" device configuration for the Xiaomi POCO X3 Pro (vayu)
+#
+# This file is copied to mobian-recipes/devices/qcom/configs/wip.toml at build
+# time. Values are taken from the postmarketOS port (device-xiaomi-vayu/deviceinfo).
+#
+# The device-tree file is built as qcom/<chipset>-<vendor>-<model>-<variant>.dtb,
+# i.e. qcom/sm8150-xiaomi-vayu-huaxing.dtb and qcom/sm8150-xiaomi-vayu-tianma.dtb.
+# One boot image is generated per display panel variant.
+
+chipset = "sm8150"
+
+# Boot image: header v0, DTB appended to the kernel (deviceinfo_append_dtb=true)
+[bootimg]
+base = 0x0
+kernel = 0x8000
+ramdisk = 0x1000000
+second = 0xf00000
+tags = 0x100
+pagesize = 4096
+
+[[device]]
+vendor = "xiaomi"
+model = "vayu"
+variant = "huaxing"
+
+[[device]]
+vendor = "xiaomi"
+model = "vayu"
+variant = "tianma"
