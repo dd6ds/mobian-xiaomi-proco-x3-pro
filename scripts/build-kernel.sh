@@ -10,7 +10,7 @@ if [ "${INSTALL_DEPS:-0}" = "1" ]; then
     apt-get update -qq
     apt-get install -y -qq --no-install-recommends \
         build-essential bc bison flex cpio kmod rsync python3 perl \
-        libssl-dev libelf-dev libdw-dev dpkg-dev lsb-release debhelper curl ca-certificates xz-utils \
+        libssl-dev libelf-dev libdw-dev dpkg-dev lsb-release zstd debhelper curl ca-certificates xz-utils \
         clang lld llvm gcc-aarch64-linux-gnu libc6-dev-arm64-cross patch >/dev/null
 fi
 
