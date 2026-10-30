@@ -25,11 +25,29 @@ ls "${OUTDIR}"/packages/linux-image-*.deb >/dev/null 2>&1 \
 
 RECIPES="${WORKDIR}/mobian-recipes"
 log "Preparing mobian-recipes @ ${MOBIAN_RECIPES_REF}"
+# retry <cmd...>: salsa.debian.org occasionally answers 502/503
+retry() {
+    local n
+    for n in 1 2 3 4 5; do
+        "$@" && return 0
+        warn "Attempt ${n}/5 failed: $* - retrying in $((n * 30))s"
+        sleep $((n * 30))
+    done
+    return 1
+}
 if [ ! -d "${RECIPES}/.git" ]; then
-    git clone -q "${MOBIAN_RECIPES_URL}" "${RECIPES}"
+    rm -rf "${RECIPES}"
+    retry git clone -q "${MOBIAN_RECIPES_URL}" "${RECIPES}" \
+        || die "Cannot clone ${MOBIAN_RECIPES_URL} (salsa.debian.org down?). Try again later."
 fi
-git -C "${RECIPES}" fetch -q origin
-git -C "${RECIPES}" checkout -q -f "${MOBIAN_RECIPES_REF}"
+if ! git -C "${RECIPES}" cat-file -e "${MOBIAN_RECIPES_REF}^{commit}" 2>/dev/null \
+   || ! git -C "${RECIPES}" rev-parse -q --verify "${MOBIAN_RECIPES_REF}" | grep -q "^${MOBIAN_RECIPES_REF}"; then
+    retry git -C "${RECIPES}" fetch -q origin \
+        || die "Cannot fetch ${MOBIAN_RECIPES_URL} (salsa.debian.org down?). Try again later."
+fi
+REF="${MOBIAN_RECIPES_REF}"
+git -C "${RECIPES}" rev-parse -q --verify "origin/${REF}" >/dev/null && REF="origin/${REF}"   # branch name
+git -C "${RECIPES}" checkout -q -f --detach "${REF}"
 git -C "${RECIPES}" clean -q -fdx -e '*.tar.xz'   # keep cached rootfs tarballs
 
 QCOM="${RECIPES}/devices/qcom"
